@@ -1,2 +1,3 @@
 # task-manager
 task-manager project using spring-boot for backend and integrating frontend as well
+implement JWT auth,Rest Api's and try to implement standard ways to connecting layers like controller, service, repository, entity etc... 
