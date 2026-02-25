@@ -33,5 +33,7 @@ public class User {
     private LocalDateTime updatedAt;
     @OneToMany(mappedBy = "user", cascade=CascadeType.ALL)
     private List<Task> tasks;
+    @OneToMany(mappedBy = "user")
+    private List<RefreshToken> refreshTokens;
 
 }
