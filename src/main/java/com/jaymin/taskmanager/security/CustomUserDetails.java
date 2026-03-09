@@ -1,6 +1,7 @@
 package com.jaymin.taskmanager.security;
 
 import com.jaymin.taskmanager.entity.User;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -8,8 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
-
-@Component
 public class CustomUserDetails implements UserDetails {
     private final User user;
     public CustomUserDetails(User user) {
@@ -25,7 +24,7 @@ public class CustomUserDetails implements UserDetails {
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE"+user.getRole().name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_"+user.getRole().name()));
     }
     @Override
     public boolean isAccountNonExpired() {
