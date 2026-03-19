@@ -31,9 +31,10 @@ public class User {
     private LocalDateTime createdAt;
     @Column(name="updated_at",nullable = false)
     private LocalDateTime updatedAt;
+    @Column(name="token_version",nullable = false)
+    private Integer tokenVersion=0;
     @OneToMany(mappedBy = "user", cascade=CascadeType.ALL)
     private List<Task> tasks;
     @OneToMany(mappedBy = "user")
     private List<RefreshToken> refreshTokens;
-
 }

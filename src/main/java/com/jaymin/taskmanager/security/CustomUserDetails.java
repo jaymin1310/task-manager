@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
+@Getter
 public class CustomUserDetails implements UserDetails {
     private final User user;
     public CustomUserDetails(User user) {
@@ -41,6 +42,9 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+    public Integer getTokenVersion() {
+        return user.getTokenVersion();
     }
     public User getUser() {
         return user;

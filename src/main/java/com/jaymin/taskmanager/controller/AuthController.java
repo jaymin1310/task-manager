@@ -5,6 +5,7 @@ import com.jaymin.taskmanager.dto.request.RefreshTokenRequest;
 import com.jaymin.taskmanager.dto.request.RegisterRequest;
 import com.jaymin.taskmanager.dto.response.AuthResponse;
 import com.jaymin.taskmanager.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,12 +42,19 @@ public class AuthController {
         AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
     }
+
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(
-            @RequestBody RefreshTokenRequest request
-    ) {
-        authService.logout(request);
-        return ResponseEntity.ok("Logged out successfully");
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Invalid Authorization header");
+        }
+        String token = authHeader.substring(7);
+
+        authService.logout(token);
+
+        return ResponseEntity.ok("Logout successful");
     }
 
 }

@@ -4,7 +4,6 @@ import com.jaymin.taskmanager.security.CustomUserDetails;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -24,12 +23,16 @@ public class JwtService {
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration;
 
-    CustomUserDetails userDetails;
-    public String generateAccessToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(),userDetails,accessTokenExpiration);
+
+    public String generateAccessToken(UserDetails userDetails,int tokenVersion) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("tokenVersion", tokenVersion);
+        return generateToken(claims, userDetails, accessTokenExpiration);
     }
-    public String generateRefreshToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails, refreshTokenExpiration);
+    public String generateRefreshToken(UserDetails userDetails, int tokenVersion) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("tokenVersion", tokenVersion);
+        return generateToken(claims, userDetails, refreshTokenExpiration);
     }
     private String generateToken(
             Map<String, Object> extraClaims,
@@ -43,6 +46,10 @@ public class JwtService {
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+    //extract token-version
+    public Integer extractTokenVersion(String token) {
+        return extractClaim(token, claims -> claims.get("tokenVersion", Integer.class));
     }
     //extract username
     public String extractUsername(String token) {

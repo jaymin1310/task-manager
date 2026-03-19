@@ -1,5 +1,8 @@
 package com.jaymin.taskmanager.security.jwt;
 
+import com.jaymin.taskmanager.entity.User;
+import com.jaymin.taskmanager.repository.UserRepository;
+import com.jaymin.taskmanager.security.CustomUserDetails;
 import com.jaymin.taskmanager.security.CustomUserDetailsService;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -21,6 +24,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -30,7 +34,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -47,14 +50,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         userDetailsService.loadUserByUsername(username);
 
                 if (jwtService.isTokenValid(token, userDetails)) {
+                    Integer tokenVersionFromJwt =
+                            jwtService.extractTokenVersion(token);
 
+                    CustomUserDetails customUserDetails =
+                            (CustomUserDetails) userDetails;
+
+                    Integer tokenVersionFromDb =
+                            customUserDetails.getTokenVersion();
+                    if (!tokenVersionFromJwt.equals(tokenVersionFromDb)) {
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
                                     userDetails.getAuthorities()
                             );
-
                     authToken.setDetails(
                             new WebAuthenticationDetailsSource()
                                     .buildDetails(request)

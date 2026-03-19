@@ -42,6 +42,7 @@ public class AuthService {
                 .role(Role.USER)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
+                .tokenVersion(0)
                 .build();
 
         userRepository.save(user);
@@ -49,10 +50,11 @@ public class AuthService {
         UserDetails userDetails =
                 userDetailsService.loadUserByUsername(user.getEmail());
 
-        String accessToken = jwtService.generateAccessToken(userDetails);
+        String accessToken =
+                jwtService.generateAccessToken(userDetails, user.getTokenVersion());
 
         RefreshToken refreshToken =
-                refreshTokenService.createRefreshToken(user, userDetails);
+                refreshTokenService.createRefreshToken(user, userDetails, user.getTokenVersion());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -78,10 +80,11 @@ public class AuthService {
         UserDetails userDetails =
                 userDetailsService.loadUserByUsername(user.getEmail());
 
-        String accessToken = jwtService.generateAccessToken(userDetails);
+        String accessToken =
+                jwtService.generateAccessToken(userDetails, user.getTokenVersion());
 
         RefreshToken refreshToken =
-                refreshTokenService.createRefreshToken(user, userDetails);
+                refreshTokenService.createRefreshToken(user, userDetails, user.getTokenVersion());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -104,7 +107,7 @@ public class AuthService {
                 userDetailsService.loadUserByUsername(user.getEmail());
 
         String newAccessToken =
-                jwtService.generateAccessToken(userDetails);
+                jwtService.generateAccessToken(userDetails, user.getTokenVersion());
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
@@ -113,7 +116,17 @@ public class AuthService {
                 .role(user.getRole().name())
                 .build();
     }
-    public void logout(RefreshTokenRequest request) {
-        refreshTokenService.revokeToken(request.getRefreshToken());
+    public void logout(String accessToken) {
+
+        String username = jwtService.extractUsername(accessToken);
+        Integer tokenVersion = jwtService.extractTokenVersion(accessToken);
+        User user = userRepository.findByEmail(username).orElseThrow();
+        if (!tokenVersion.equals(user.getTokenVersion())) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+        // Increment version (INVALIDATES ALL ACCESS TOKENS)
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userRepository.save(user);
+        refreshTokenService.deleteByUser(user);
     }
 }

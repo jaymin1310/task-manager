@@ -5,6 +5,7 @@ import com.jaymin.taskmanager.entity.User;
 import com.jaymin.taskmanager.repository.RefreshTokenRepository;
 import com.jaymin.taskmanager.security.jwt.JwtService;
 import io.jsonwebtoken.JwtException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,9 +23,9 @@ public class RefreshTokenService {
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration;
 
-    public RefreshToken createRefreshToken(User user, UserDetails userDetails) {
+    public RefreshToken createRefreshToken(User user, UserDetails userDetails,int tokenVersion) {
 
-        String token = jwtService.generateRefreshToken(userDetails);
+        String token = jwtService.generateRefreshToken(userDetails,tokenVersion);
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .token(token)
@@ -58,12 +59,17 @@ public class RefreshTokenService {
         } catch (JwtException e) {
             throw new RuntimeException("Invalid refresh token");
         }
+        Integer tokenVersionFromJwt = jwtService.extractTokenVersion(token);
+        User user = refreshToken.getUser();
 
+        if (!tokenVersionFromJwt.equals(user.getTokenVersion())) {
+            throw new RuntimeException("Refresh token is invalid due to version mismatch");
+        }
         return refreshToken;
     }
-
-    public void revokeToken(String token) {
-        refreshTokenRepository.deleteByToken(token);
+    @Transactional
+    public void deleteByUser(User user) {
+        refreshTokenRepository.deleteByUser(user);
     }
 
     public void deleteExpiredTokens() {
