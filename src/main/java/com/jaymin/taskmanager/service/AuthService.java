@@ -1,8 +1,6 @@
 package com.jaymin.taskmanager.service;
 
-import com.jaymin.taskmanager.dto.request.LoginRequest;
-import com.jaymin.taskmanager.dto.request.RefreshTokenRequest;
-import com.jaymin.taskmanager.dto.request.RegisterRequest;
+import com.jaymin.taskmanager.dto.request.*;
 import com.jaymin.taskmanager.dto.response.AuthResponse;
 import com.jaymin.taskmanager.entity.RefreshToken;
 import com.jaymin.taskmanager.entity.Role;
@@ -18,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,11 +27,26 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService userDetailsService;
+    private final OtpService otpService;
 
-    public AuthResponse register(RegisterRequest request) {
+    public String register(RegisterRequest request) {
+        Optional<User> existingUser =
+                userRepository.findByEmail(request.getEmail());
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
 
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already registered");
+            if (user.getIsVerified()) {
+                throw new RuntimeException("Email already registered");
+            }
+            user.setName(request.getName());
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setUpdatedAt(LocalDateTime.now());
+
+            userRepository.save(user);
+
+            otpService.generateAndSendOtp(user);
+
+            return "OTP sent in your registered email";
         }
 
         User user = User.builder()
@@ -43,25 +57,11 @@ public class AuthService {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .tokenVersion(0)
+                .isVerified(false)
                 .build();
-
         userRepository.save(user);
-
-        UserDetails userDetails =
-                userDetailsService.loadUserByUsername(user.getEmail());
-
-        String accessToken =
-                jwtService.generateAccessToken(userDetails, user.getTokenVersion());
-
-        RefreshToken refreshToken =
-                refreshTokenService.createRefreshToken(user, userDetails, user.getTokenVersion());
-
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
-                .email(user.getEmail())
-                .role(user.getRole().name())
-                .build();
+        otpService.generateAndSendOtp(user);
+        return "Otp sent in your registered email";
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -76,7 +76,9 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() ->
                         new RuntimeException("User not found"));
-
+        if (!user.getIsVerified()) {
+            throw new RuntimeException("User not verified");
+        }
         UserDetails userDetails =
                 userDetailsService.loadUserByUsername(user.getEmail());
 
@@ -128,5 +130,38 @@ public class AuthService {
         user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
         refreshTokenService.deleteByUser(user);
+    }
+    public String resendOtp(ResendOtpRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getIsVerified()) {
+            throw new RuntimeException("User already verified");
+        }
+        otpService.generateAndSendOtp(user);
+
+        return "OTP sent again";
+    }
+    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        otpService.validateOtp(user, request.getOtp());
+        user.setIsVerified(true);
+        userRepository.save(user);
+        UserDetails userDetails =
+                userDetailsService.loadUserByUsername(user.getEmail());
+
+        String accessToken =
+                jwtService.generateAccessToken(userDetails, user.getTokenVersion());
+
+        RefreshToken refreshToken =
+                refreshTokenService.createRefreshToken(user, userDetails, user.getTokenVersion());
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .email(user.getEmail())
+                .role(user.getRole().name())
+                .build();
     }
 }

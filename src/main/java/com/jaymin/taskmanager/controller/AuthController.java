@@ -1,8 +1,6 @@
 package com.jaymin.taskmanager.controller;
 
-import com.jaymin.taskmanager.dto.request.LoginRequest;
-import com.jaymin.taskmanager.dto.request.RefreshTokenRequest;
-import com.jaymin.taskmanager.dto.request.RegisterRequest;
+import com.jaymin.taskmanager.dto.request.*;
 import com.jaymin.taskmanager.dto.response.AuthResponse;
 import com.jaymin.taskmanager.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,13 +18,23 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(
+    public ResponseEntity<String> register(
             @RequestBody RegisterRequest request
     ) {
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(authService.register(request));
     }
-
+    @PostMapping("/resend-otp")
+    public ResponseEntity<String> resendOtp(
+            @RequestBody ResendOtpRequest request
+    ) {
+        return ResponseEntity.ok(authService.resendOtp(request));
+    }
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(
+            @RequestBody VerifyOtpRequest request
+    ) {
+        return ResponseEntity.ok(authService.verifyOtp(request));
+    }
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
             @RequestBody LoginRequest request

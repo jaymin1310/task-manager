@@ -33,6 +33,8 @@ public class User {
     private LocalDateTime updatedAt;
     @Column(name="token_version",nullable = false)
     private Integer tokenVersion=0;
+    @Column(name="is_verified",nullable = false)
+    private Boolean isVerified;
     @OneToMany(mappedBy = "user", cascade=CascadeType.ALL)
     private List<Task> tasks;
     @OneToMany(mappedBy = "user")
