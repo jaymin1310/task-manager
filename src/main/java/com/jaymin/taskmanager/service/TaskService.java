@@ -2,6 +2,7 @@ package com.jaymin.taskmanager.service;
 
 import com.jaymin.taskmanager.dto.tasks.CreateTaskRequest;
 import com.jaymin.taskmanager.dto.tasks.TaskResponse;
+import com.jaymin.taskmanager.dto.tasks.TaskStatsResponse;
 import com.jaymin.taskmanager.dto.tasks.UpdateTaskRequest;
 import com.jaymin.taskmanager.entity.Status;
 import com.jaymin.taskmanager.entity.Task;
@@ -9,9 +10,13 @@ import com.jaymin.taskmanager.entity.User;
 import com.jaymin.taskmanager.repository.TaskRepository;
 import com.jaymin.taskmanager.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,20 +41,37 @@ public class TaskService {
     }
 
     //get all tasks
-    public List<TaskResponse> getAllTasks() {
+//    public List<TaskResponse> getAllTasks() {
+//        User user=getCurrentUser();
+//        List<Task>tasks=taskRepository.findByUser(user);
+//        return tasks.stream()
+//                .map(this::mapToResponse)
+//                .toList();
+//    }
+    //get all tasks by page and its handle all filters with optional without adding multiple end points
+    public Page<TaskResponse> getAllTasks(Status status, LocalDate dueBefore, int page, int size) {
         User user=getCurrentUser();
-        List<Task>tasks=taskRepository.findByUser(user);
-        return tasks.stream()
-                .map(this::mapToResponse)
-                .toList();
+        Page<Task>tasks;
+        Pageable pageable= PageRequest.of(page,size);
+        if(status!=null && dueBefore!=null){
+            tasks=taskRepository.findByUserAndStatusAndDueDateBefore(user,status,dueBefore,pageable);
+        }else if(status!=null){
+            tasks=taskRepository.findByUserAndStatus(user,status,pageable);
+        }else if(dueBefore!=null){
+            tasks=taskRepository.findByUserAndDueDateBefore(user,dueBefore,pageable);
+        }else{
+            tasks=taskRepository.findByUser(user,pageable);
+        }
+        return tasks.map(this::mapToResponse);
     }
 
     //get completed and pending tasks
-    public List<TaskResponse> getTasksByStatus(Status status){
+   /* public Page<TaskResponse> getTasksByStatus(Status status,int page,int size){
         User user=getCurrentUser();
-        List<Task>tasks=taskRepository.findByUserAndStatus(user,status);
-        return tasks.stream().map(this::mapToResponse).toList();
-    }
+        Pageable pageable= PageRequest.of(page,size);
+        Page<Task>tasks=taskRepository.findByUserAndStatus(user,status,pageable);
+        return tasks.map(this::mapToResponse);
+    }*/
     //get task by id
     public TaskResponse getTaskById(Long id) {
         Task task=getTaskOrThrow(id);
@@ -79,6 +101,32 @@ public class TaskService {
         Task task=getTaskOrThrow(id);
         taskRepository.delete(task);
     }
+    public List<TaskResponse>getOverdueTasks() {
+        User user = getCurrentUser();
+        List<Task> tasks = taskRepository.findByUserAndDueDateBeforeAndStatusNot(user, LocalDate.now(), Status.COMPLETED);
+        return tasks.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+    public TaskStatsResponse getTaskStats() {
+        User user=getCurrentUser();
+        long total=taskRepository.countByUser(user);
+        long completed=taskRepository.countByUserAndStatus(user, Status.COMPLETED);
+        long pending=taskRepository.countByUserAndStatus(user, Status.PENDING);
+        return TaskStatsResponse.builder()
+                .total(total)
+                .pending(pending)
+                .completed(completed)
+                .build();
+    }
+    //search by keyword for title or description
+    public Page<TaskResponse> searchTasks(String keyword,int page,int size) {
+        User user=getCurrentUser();
+        Pageable pageable= PageRequest.of(page,size);
+        Page<Task>tasks=taskRepository.findByUserAndTitleContainingIgnoreCaseOrUserAndDescriptionContainingIgnoreCase(user,keyword,user,keyword,pageable);
+        return tasks.map(this::mapToResponse);
+    }
+    //private services...........................
     private Task getTaskOrThrow(Long id){
         User user=getCurrentUser();
         Task task = taskRepository.findById(id)
