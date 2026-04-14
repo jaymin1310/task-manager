@@ -90,6 +90,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .write("{\"error\": \"Authentication failed\"}");
             return;
         }
+
         filterChain.doFilter(request, response);
     }
 }

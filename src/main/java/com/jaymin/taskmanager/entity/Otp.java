@@ -20,13 +20,14 @@ public class Otp {
 
     @Column(nullable=false,length=6)
     private String code;
-
+    @Column(nullable=false)
+    private LocalDateTime createdAt;
     @Column(nullable=false)
     private LocalDateTime expiryTime;
-
     @Column(nullable=false)
     private boolean used;
-
+    @Column(nullable=false)
+    private OtpType type;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

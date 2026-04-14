@@ -1,8 +1,9 @@
 package com.jaymin.taskmanager.dto.request;
 
+import com.jaymin.taskmanager.entity.OtpType;
 import lombok.Data;
 
 @Data
-public class ResendOtpRequest {
+public class OtpRequest {
     private String email;
 }

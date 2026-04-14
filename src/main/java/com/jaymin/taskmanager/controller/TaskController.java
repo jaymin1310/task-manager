@@ -34,7 +34,11 @@ public class TaskController {
 //        return ResponseEntity.ok(taskService.getAllTasks());
 //    }
     //get tasks of page size
-    @GetMapping
+    @GetMapping("/hi")
+    public String sayHi(){
+        return "hi";
+    }
+    @GetMapping("/allTasks")
     public ResponseEntity<Page<TaskResponse>> getAllTasks(
             @RequestParam(required=false)Status status,
             @RequestParam(required=false)

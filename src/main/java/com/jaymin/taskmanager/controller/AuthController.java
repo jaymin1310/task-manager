@@ -1,9 +1,11 @@
 package com.jaymin.taskmanager.controller;
 
 import com.jaymin.taskmanager.dto.request.*;
+import com.jaymin.taskmanager.dto.response.ApiResponse;
 import com.jaymin.taskmanager.dto.response.AuthResponse;
 import com.jaymin.taskmanager.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,26 +20,44 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(
-            @RequestBody RegisterRequest request
+    public ResponseEntity<ApiResponse> register(
+            @Valid @RequestBody RegisterRequest request
     ) {
         return ResponseEntity.ok(authService.register(request));
     }
-    @PostMapping("/resend-otp")
-    public ResponseEntity<String> resendOtp(
-            @RequestBody ResendOtpRequest request
+    @PostMapping("/resend-verification-otp")
+    public ResponseEntity<ApiResponse> resendVerificationOtp(
+            @Valid @RequestBody OtpRequest request
     ) {
-        return ResponseEntity.ok(authService.resendOtp(request));
+        return ResponseEntity.ok(authService.resendVerificationOtp(request));
+    }
+    @PostMapping("/resend-reset-otp")
+    public ResponseEntity<ApiResponse> resendResetOtp(
+            @Valid @RequestBody OtpRequest request
+    ) {
+        return ResponseEntity.ok(authService.resendResetOtp(request));
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse> forgotPassword(
+            @Valid @RequestBody OtpRequest request
+    ) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse> resetPassword(
+             @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        return ResponseEntity.ok(authService.resetPassword(request));
     }
     @PostMapping("/verify-otp")
     public ResponseEntity<AuthResponse> verifyOtp(
-            @RequestBody VerifyOtpRequest request
+            @Valid @RequestBody VerifyOtpRequest request
     ) {
         return ResponseEntity.ok(authService.verifyOtp(request));
     }
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
-            @RequestBody LoginRequest request
+            @Valid @RequestBody LoginRequest request
     ) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(response);
@@ -45,7 +65,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refreshToken(
-            @RequestBody RefreshTokenRequest request
+            @Valid @RequestBody RefreshTokenRequest request
     ) {
         AuthResponse response = authService.refreshToken(request);
         return ResponseEntity.ok(response);
@@ -56,7 +76,7 @@ public class AuthController {
 
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new RuntimeException("Invalid Authorization header");
+            return ResponseEntity.status(401).body("Invalid Authorization header");
         }
         String token = authHeader.substring(7);
 
