@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface OtpRepository extends JpaRepository<Otp,Long> {
     Optional<Otp> findByCodeAndUserAndType(String code, User user,OtpType otpType);
-
+    void deleteByUser(User user);
     void deleteByExpiryTimeBefore(java.time.LocalDateTime now);
     @Modifying
     @Transactional

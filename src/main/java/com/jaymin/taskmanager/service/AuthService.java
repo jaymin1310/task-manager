@@ -75,7 +75,7 @@ public class AuthService {
     public ApiResponse resetPassword(ResetPasswordRequest request){
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
-        if (userOpt.isEmpty()) {
+        if (userOpt.isEmpty() || !userOpt.get().getIsVerified()) {
             return ApiResponse.builder()
                     .message("Invalid email or OTP")
                     .success(false)
@@ -93,7 +93,6 @@ public class AuthService {
                 .build();
     }
     public AuthResponse login(LoginRequest request) {
-
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -134,7 +133,6 @@ public class AuthService {
                 refreshTokenService.validateRefreshToken(
                         request.getRefreshToken()
                 );
-
         User user = refreshToken.getUser();
 
         UserDetails userDetails =
@@ -167,7 +165,7 @@ public class AuthService {
 
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
-        if (userOpt.isEmpty() || userOpt.get().getIsVerified()) {
+        if (userOpt.isEmpty()||userOpt.get().getIsVerified()) {
             return ApiResponse.builder()
                     .message("If account exists, OTP has been sent")
                     .success(true)
@@ -184,7 +182,7 @@ public class AuthService {
     public ApiResponse resendResetOtp(OtpRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
-        if (userOpt.isEmpty()) {
+        if (userOpt.isEmpty()|| !userOpt.get().getIsVerified()) {
             return ApiResponse.builder()
                     .message("If account exists, OTP has been sent")
                     .success(true)
@@ -226,8 +224,7 @@ public class AuthService {
     }
     public ApiResponse forgotPassword(OtpRequest request) {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-
-        if (userOpt.isEmpty()) {
+        if (userOpt.isEmpty()|| !userOpt.get().getIsVerified()) {
             return ApiResponse.builder()
                     .message("If account exists, OTP has been sent")
                     .success(true)

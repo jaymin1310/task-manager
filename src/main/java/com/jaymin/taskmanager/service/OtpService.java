@@ -21,7 +21,6 @@ public class OtpService {
         return String.valueOf(100000 + random.nextInt(900000));
     }
     public OtpResponse generateAndSendOtp(User user, OtpType otpType) {
-
         Otp latestOtp = otpRepository
                 .findTopByUserAndTypeAndUsedFalseOrderByCreatedAtDesc(user, otpType)
                 .orElse(null);

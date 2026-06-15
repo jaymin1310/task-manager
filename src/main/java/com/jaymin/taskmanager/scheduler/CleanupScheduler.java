@@ -22,5 +22,5 @@ public class CleanupScheduler {
         otpRepository.deleteByExpiryTimeBefore(now);
         otpRepository.deleteByUsedTrue();
         System.out.println("Cleanup executed");
-    }git
+    }
 }

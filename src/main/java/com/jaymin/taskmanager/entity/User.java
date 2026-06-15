@@ -37,6 +37,6 @@ public class User {
     private Boolean isVerified;
     @OneToMany(mappedBy = "user", cascade=CascadeType.ALL)
     private List<Task> tasks;
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade=CascadeType.ALL)
     private List<RefreshToken> refreshTokens;
 }
